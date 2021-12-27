@@ -1,0 +1,19 @@
+FLUID 3D
+
+Aims
+- 3D simulation of fluids down to fs timescales
+- GPU parallelisation
+- Accurate laser interactions
+- Error calculations
+- Molecular simulation, with each molecule representing a variable number of chemical molecules
+
+Development plan
+- Create functioning 3D fluid
+- Once a basic fluid can be created, get unit tests and continous integration working
+- Conservation of mass, energy, momentum
+- Simulate dropping a water droplet onto a hard surface
+- Simulate shock waves travelling through a fluid
+- Work on laser interactions
+
+Physical equations
+- Lagrangian framework
