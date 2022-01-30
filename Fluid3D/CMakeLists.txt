@@ -4,6 +4,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Add source to this project's executable.
-add_executable (Fluid3D "Fluid3D.cpp" "Fluid3D.h" "Source1.cpp")
+add_executable (Fluid3D "Fluid3D.cpp" "Fluid3D.h" "unit_tests.cpp")
 
 # TODO: Add tests and install targets if needed.
+
