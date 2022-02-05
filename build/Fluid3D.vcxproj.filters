@@ -4,6 +4,9 @@
     <ClCompile Include="C:\Users\melti\source\repos\Fluid3D\src\Fluid3D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\melti\source\repos\Fluid3D\src\Laser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\melti\source\repos\Fluid3D\src\CMakeLists.txt" />

@@ -14,12 +14,23 @@
 # EXTERNAL cache entries
 ########################
 
+//Path to a file.
+BOOST_INCLUDE_DIR:PATH=BOOST_INCLUDE_DIR-NOTFOUND
+
+//Path to a library.
+BOOST_LIBRARY:FILEPATH=BOOST_LIBRARY-NOTFOUND
+
+BOOST_ROOT_DIR:PATH=
+
 //Builds the googlemock subproject
 BUILD_GMOCK:BOOL=ON
 
 //Path to a program.
 CMAKE_AR:FILEPATH=D:/Program Files (x86)/Visual Studio/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe
 
+//Semicolon separated list of supported configuration types, only
+// supports Debug, Release, MinSizeRel, and RelWithDebInfo, anything
+// else will be ignored.
 CMAKE_CONFIGURATION_TYPES:STRING=Debug;Release;MinSizeRel;RelWithDebInfo
 
 //Flags used by the CXX compiler during all build types.
@@ -109,7 +120,8 @@ CMAKE_INSTALL_MANDIR:PATH=
 //C header files for non-gcc (/usr/include)
 CMAKE_INSTALL_OLDINCLUDEDIR:PATH=/usr/include
 
-CMAKE_INSTALL_PREFIX:PATH=C:/Users/melti/source/repos/Fluid3D
+//Install path prefix, prepended onto install directories.
+CMAKE_INSTALL_PREFIX:PATH=C:/Program Files (x86)/Fluid3D
 
 //Run-time variable data (LOCALSTATEDIR/run)
 CMAKE_INSTALL_RUNSTATEDIR:PATH=
@@ -255,11 +267,18 @@ FETCHCONTENT_FULLY_DISCONNECTED:BOOL=OFF
 FETCHCONTENT_QUIET:BOOL=ON
 
 //When not empty, overrides where to find pre-populated content
+// for boost
+FETCHCONTENT_SOURCE_DIR_BOOST:PATH=
+
+//When not empty, overrides where to find pre-populated content
 // for googletest
 FETCHCONTENT_SOURCE_DIR_GOOGLETEST:PATH=
 
 //Enables UPDATE_DISCONNECTED behavior for all content population
 FETCHCONTENT_UPDATES_DISCONNECTED:BOOL=OFF
+
+//Enables UPDATE_DISCONNECTED behavior just for population of boost
+FETCHCONTENT_UPDATES_DISCONNECTED_BOOST:BOOL=OFF
 
 //Enables UPDATE_DISCONNECTED behavior just for population of googletest
 FETCHCONTENT_UPDATES_DISCONNECTED_GOOGLETEST:BOOL=OFF
@@ -274,26 +293,31 @@ Fluid3D_IS_TOP_LEVEL:STATIC=ON
 Fluid3D_SOURCE_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/src
 
 //Value Computed by CMake
-Fluid3D_test_BINARY_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/build/Fluid3D_tests
-
-//Value Computed by CMake
-Fluid3D_test_IS_TOP_LEVEL:STATIC=OFF
-
-//Value Computed by CMake
-Fluid3D_test_SOURCE_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/src/Fluid3D_tests
-
-//Value Computed by CMake
-Fluid3D_tests_BINARY_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/build/Fluid3D_tests
+Fluid3D_tests_BINARY_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/build/tests
 
 //Value Computed by CMake
 Fluid3D_tests_IS_TOP_LEVEL:STATIC=OFF
 
 //Value Computed by CMake
-Fluid3D_tests_SOURCE_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/src/Fluid3D_tests
+Fluid3D_tests_SOURCE_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/src/tests
 
 //Enable installation of googletest. (Projects embedding googletest
 // may want to turn this OFF.)
 INSTALL_GTEST:BOOL=ON
+
+//Use test library
+USE_TESTS:BOOL=ON
+
+boost_force_shared_crt:BOOL=ON
+
+//Value Computed by CMake
+boost_units_BINARY_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/build/_deps/boost-build
+
+//Value Computed by CMake
+boost_units_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+boost_units_SOURCE_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/build/_deps/boost-src
 
 //Value Computed by CMake
 gmock_BINARY_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/build/_deps/googletest-build/googlemock
@@ -343,6 +367,15 @@ gtest_hide_internal_symbols:BOOL=OFF
 
 //Dependencies for the target
 gtest_main_LIB_DEPENDS:STATIC=general;gtest;
+
+//Value Computed by CMake
+tests_BINARY_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/build/test
+
+//Value Computed by CMake
+tests_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+tests_SOURCE_DIR:STATIC=C:/Users/melti/source/repos/Fluid3D/src/test
 
 
 ########################
@@ -509,12 +542,14 @@ CMAKE_STATIC_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
+//Details about finding Boost
+FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[C:/Users/melti/source/repos/Fluid3D/src/packages/include][C:/Users/melti/source/repos/Fluid3D/src/packages/lib/boost_Units.dll][v()]
 //Details about finding Python
 FIND_PACKAGE_MESSAGE_DETAILS_Python:INTERNAL=[C:/Users/melti/AppData/Local/Programs/Python/Python39/python.exe][cfound components: Interpreter ][v3.9.7()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //CMAKE_INSTALL_PREFIX during last run
-_GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=C:/Users/melti/source/repos/Fluid3D
+_GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=C:/Program Files (x86)/Fluid3D
 //Path to a program.
 _Python_EXECUTABLE:INTERNAL=C:/Users/melti/AppData/Local/Programs/Python/Python39/python.exe
 //Python Properties

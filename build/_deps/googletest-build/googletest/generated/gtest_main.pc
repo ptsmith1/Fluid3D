@@ -1,5 +1,5 @@
-libdir=C:/Users/melti/source/repos/Fluid3D/lib
-includedir=C:/Users/melti/source/repos/Fluid3D/include
+libdir=C:/Program Files (x86)/Fluid3D/lib
+includedir=C:/Program Files (x86)/Fluid3D/include
 
 Name: gtest_main
 Description: GoogleTest (with main() function)

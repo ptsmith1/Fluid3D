@@ -2,9 +2,9 @@ C:/Users/melti/source/repos/Fluid3D/build/CMakeFiles/Fluid3D.dir
 C:/Users/melti/source/repos/Fluid3D/build/CMakeFiles/INSTALL.dir
 C:/Users/melti/source/repos/Fluid3D/build/CMakeFiles/ALL_BUILD.dir
 C:/Users/melti/source/repos/Fluid3D/build/CMakeFiles/ZERO_CHECK.dir
-C:/Users/melti/source/repos/Fluid3D/build/Fluid3D_tests/CMakeFiles/Fluid3D_tests.dir
-C:/Users/melti/source/repos/Fluid3D/build/Fluid3D_tests/CMakeFiles/INSTALL.dir
-C:/Users/melti/source/repos/Fluid3D/build/Fluid3D_tests/CMakeFiles/ALL_BUILD.dir
+C:/Users/melti/source/repos/Fluid3D/build/test/CMakeFiles/tests.dir
+C:/Users/melti/source/repos/Fluid3D/build/test/CMakeFiles/INSTALL.dir
+C:/Users/melti/source/repos/Fluid3D/build/test/CMakeFiles/ALL_BUILD.dir
 C:/Users/melti/source/repos/Fluid3D/build/_deps/googletest-build/CMakeFiles/INSTALL.dir
 C:/Users/melti/source/repos/Fluid3D/build/_deps/googletest-build/CMakeFiles/ALL_BUILD.dir
 C:/Users/melti/source/repos/Fluid3D/build/_deps/googletest-build/googlemock/CMakeFiles/gmock.dir
