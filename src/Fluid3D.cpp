@@ -4,8 +4,9 @@
 #define _USE_MATH_DEFINES
 #define magnetic_constant (1.6e-19*1.6e-19)/(4*M_PI*8.854e-12*9.10956e-31) 
 
-#include "Fluid3D.h"
-#include "Laser.h"
+#include "fluid3D.h"
+#include "laser.h"
+#include "simulation.cpp"
 
 #include <memory>
 #include <vector>
@@ -20,6 +21,9 @@
 using std::filesystem::current_path;
 using namespace Fluid3D_namespace;
 
+void random_vec_initialisation(std::vector<int>& vel);
+
+int workhorse(Simulation sim);
 
 Fluid3D::Fluid3D(int total_steps)
 {
@@ -237,7 +241,9 @@ int main()
 	//	std::cout << "Time: " << step * p.dt << " seconds" << std::endl;
 	//}
 	//p.save_to_file(total_steps);
-	Laser l;
-	l.gaussian_intensity();
+	//Laser l;
+	//l.gaussian_intensity();
+	Simulation sim;
+	workhorse(sim);
 	return 0;
 }

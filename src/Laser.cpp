@@ -1,5 +1,5 @@
-#include "Laser.h"
-#include "Fluid3D.h"
+#include "laser.h"
+#include "fluid3D.h"
 
 using namespace Fluid3D_namespace;
 
