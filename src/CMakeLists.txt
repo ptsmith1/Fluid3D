@@ -24,7 +24,7 @@ if(USE_TESTS)
  	list(APPEND EXTRA_INCLUDES "$(Fluid3D_TEST_DIR)")
 endif()
 
-add_executable(${PROJECT_NAME} Fluid3D.cpp Laser.cpp)
+add_executable(${PROJECT_NAME} fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp simulation.cpp  )
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}"  ${EXTRA_LIBS})
 
