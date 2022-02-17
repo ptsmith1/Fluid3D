@@ -15,20 +15,50 @@ set(Fluid3D_PYTHON_DIR $(Fluid3D_DIR)/python)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-configure_file(Fluid3DConfig.h.in Fluid3DConfig.h)
+add_executable(${PROJECT_NAME} fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp simulation.cpp  )
 
+configure_file(Fluid3DConfig.h.in Fluid3DConfig.h)
+################################################################################################################
 option(USE_TESTS "Use test library" ON)
 
 if(USE_TESTS)
-	add_subdirectory (test)
-	list(APPEND EXTRA_LIBS test)
+	add_subdirectory (tests)
+	list(APPEND EXTRA_LIBS tests)
  	list(APPEND EXTRA_INCLUDES "$(Fluid3D_TEST_DIR)")
 endif()
+#################################################################################################################
+#add_subdirectory(python)
+#list(APPEND EXTRA_LIBS python)
+#################################################################################################################
+add_subdirectory(library)
+list(APPEND EXTRA_LIBS library)
+###################################################glfw#####################################################
+#Download submodules for glfw
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+	option(GIT_SUBMODULE "Check submodules during build" ON)
+	if(GIT_SUBMODULE)
+		message(STATUS "Submodule update")
+		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+						WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+						RESULT_VARIABLE GIT_SUBMOD_RESULT)
+		if(NOT GIT_SUBMOD RESULT EQUAL "0")
+			message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+		endif()
+	endif()
+endif()
+#check submodules
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glfw/CMakeLists.txt")
+	message(FATAL_ERROR "The glfw submodules was not downloaded! GIT_SUBMODULE was turned off or failed.")
+endif()
 
-add_executable(${PROJECT_NAME} fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp simulation.cpp  )
-
+add_subdirectory(external/glfw)
+list(APPEND EXTRA_LIBS external/glfw/include)
+#################################################################################################################
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}"  ${EXTRA_LIBS})
-
+target_link_directories(${PROJECT_NAME} PUBLIC library PUBLIC external/glfw/src) #paths from build folder
+target_link_libraries(${PROJECT_NAME} adder glfw) #looks for adder.lib, need to do this for each library file in the library folder
+#################################################################################################################
 
 #gtest
 if (NOT googletest) # is googletest defined if already built?
@@ -42,7 +72,3 @@ if (NOT googletest) # is googletest defined if already built?
 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 	FetchContent_MakeAvailable(googletest)
 endif()
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-                           "${PROJECT_BINARY_DIR}"
-                           )

@@ -16,6 +16,8 @@
 #include <filesystem>
 #include <cmath>
 #include <string>
+#include "adder.h"
+#include "GLFW/glfw3.h"
 
 using std::filesystem::current_path;
 using namespace Fluid3D_namespace;
@@ -58,8 +60,36 @@ void Fluid3D::save_to_file(Simulation sim, std::tuple<std::vector<double>, std::
 	f.close();
 }
 
+
+void glfw_stuff()
+{
+	GLFWwindow* window;
+	if (!glfwInit())
+	{
+		fprintf(stderr, "Failed to initialize GLFW\n");
+		exit(EXIT_FAILURE);
+	}
+	window = glfwCreateWindow(300, 300, "Gears", NULL, NULL);
+	if (!window)
+	{
+		fprintf(stderr, "Failed to open GLFW window\n");
+		glfwTerminate();
+		exit(EXIT_FAILURE);
+	}
+
+	// Main loop
+	while (!glfwWindowShouldClose(window))
+	{
+		// Swap buffers
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+}
+
 int main()
 {
+	std::cout<<adder(5,2)<<std::endl;
+	//glfw_stuff();
 	Fluid3D p;
 	Simulation sim;
 	std::tuple<std::vector<double>, std::vector<double>, int> data = workhorse(sim);
