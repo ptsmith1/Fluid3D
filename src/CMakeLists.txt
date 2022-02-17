@@ -8,9 +8,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 get_filename_component(Fluid3D_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
-set(Fluid3D_SOURCE_DIR $(Fluid3D_DIR)/src)
-set(Fluid3D_LIB_DIR $(Fluid3D_DIR)/lib)
+set(Fluid3D_SOURCE_DIR $(Fluid3D_DIR)/../src)
+set(Fluid3D_LIB_DIR $(Fluid3D_DIR)/library)
 set(Fluid3D_TEST_DIR $(Fluid3D_DIR)/test)
+set(Fluid3D_PYTHON_DIR $(Fluid3D_DIR)/python)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
