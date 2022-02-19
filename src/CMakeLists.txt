@@ -32,8 +32,8 @@ endif()
 #################################################################################################################
 add_subdirectory(library)
 list(APPEND EXTRA_LIBS library)
-###################################################glfw#####################################################
-#Download submodules for glfw
+#################################################################################################################
+#Download submodules from github
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${Fluid3D_DIR}/.git")
 	option(GIT_SUBMODULE "Check submodules during build" ON)
@@ -51,24 +51,17 @@ endif()
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/external/glfw/CMakeLists.txt")
 	message(FATAL_ERROR "The glfw submodules was not downloaded! GIT_SUBMODULE was turned off or failed.")
 endif()
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/external/gtest/CMakeLists.txt")
+	message(FATAL_ERROR "The gtest submodules was not downloaded! GIT_SUBMODULE was turned off or failed.")
+endif()
 
 add_subdirectory(external/glfw)
+add_subdirectory(external/gtest)
 list(APPEND EXTRA_LIBS external/glfw/include)
+list(APPEND EXTRA_LIBS external/gtest/include)
 #################################################################################################################
-target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}"  ${EXTRA_LIBS})
-target_link_directories(${PROJECT_NAME} PUBLIC library PUBLIC external/glfw/src) #paths from build folder
-target_link_libraries(${PROJECT_NAME} adder glfw) #looks for adder.lib, need to do this for each library file in the library folder
+target_include_directories(${PROJECT_NAME} PUBLIC ${EXTRA_LIBS})
+target_link_directories(${PROJECT_NAME} PUBLIC library PUBLIC external/glfw/src PUBLIC external/gtest/src) #paths from build folder
+target_link_libraries(${PROJECT_NAME} adder glfw gtest) #looks for adder.lib, need to do this for each library file in the library folder
 #################################################################################################################
 
-#gtest
-if (NOT googletest) # is googletest defined if already built?
-	include(FetchContent)
-	FetchContent_Declare(
-		googletest
-		# Specify the commit you depend on and update it regularly.
-		URL https://github.com/google/googletest/archive/refs/heads/main.zip
-	)
-	# For Windows: Prevent overriding the parent project's compiler/linker settings
-	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-	FetchContent_MakeAvailable(googletest)
-endif()

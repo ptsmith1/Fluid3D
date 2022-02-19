@@ -23,6 +23,7 @@ using std::filesystem::current_path;
 using namespace Fluid3D_namespace;
 
 std::tuple<std::vector<double>, std::vector<double>, int> workhorse(Simulation sim);
+int main_func();
 
 Fluid3D::Fluid3D()
 {
@@ -88,11 +89,11 @@ void glfw_stuff()
 
 int main()
 {
-	std::cout<<adder(5,2)<<std::endl;
+	//std::cout<<adder(5,2)<<std::endl;
 	//glfw_stuff();
-	Fluid3D p;
-	Simulation sim;
-	std::tuple<std::vector<double>, std::vector<double>, int> data = workhorse(sim);
-	p.save_to_file(sim, data);
-	return 0;
+	//Fluid3D p;
+	//Simulation sim;
+	//std::tuple<std::vector<double>, std::vector<double>, int> data = workhorse(sim);
+	//p.save_to_file(sim, data);
+	return main_func();
 }

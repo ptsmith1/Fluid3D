@@ -2,7 +2,7 @@
 #include "domain.h"
 #include "particle.h"
 
-class Simulation {
+static class Simulation {
 private:
 	double unit_size = 1e-10;
 	double material_width = 100e-10;
