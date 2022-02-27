@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <random>
+#include <string>
 
 class Random_setup
 {
@@ -15,6 +16,7 @@ class New_Particle
 private:
 public:
 	int id;
+	double last_collision_time = 0;
 	std::vector<double> pos;
 	std::vector<double> vel;
 	New_Particle(int id);
@@ -27,13 +29,14 @@ public:
 
 class Event
 {
-private:
+public:
+	std::string id;
 	New_Particle p1;
 	New_Particle p2;
-
-public:
-	double collision_time;
-	Event(New_Particle p1, New_Particle p2, double collision_time);
+	double time; //time into the simulation
+	double collision_time; //stores how long the simulation timer must be advanced to reach collision
+	double time_of_collision; //stores how long the two particles have travelled for before colliding
+	Event(New_Particle p1, New_Particle p2, double collision_time, double time_of_collision);
 	void update_velocities();
 	void update_particles(int i);
 };
@@ -43,22 +46,36 @@ class Compute
 private:
 	std::vector<New_Particle> the_boys;
 	double time;
-	const double run_time = 1e-10;
+	const double run_time = 1e-11;
 	const double particle_radius = 1.5e-10;
+	Event popped_event;
 
 public:
-	double box_size = 50e-10;
+	double box_size = 20e-10;
+	double time_save_interval = 1e-14;
 	Random_setup random_setup;
-	int particles = 1000;
-	int max_events = 100;
+	int particles = 100;
+	int collisions = 0;
+	std::vector<double> particle_data;
 	std::vector<Event> buddy_list;
+	std::vector<Event> processed_events;
 	Compute();
 	void add_particles();
 	void cycle();
-	void create_events();
+	void save_data();
+	void save_events();
+	void create_event(New_Particle& p1);
 	std::tuple<double, double> overlap(double, double, double, double);
 	bool get_sign(double x);
 	void order_event_list();
+	void compute_event();
 	void update_event_list();
 	void update_particle_velocities();
+	bool check_dup_event(Event new_event);
+	void update_event_times();
+	void print_event_details(Event e);
+	void end_time_update();
+	void data_to_csv();
 };
+
+int main_func();

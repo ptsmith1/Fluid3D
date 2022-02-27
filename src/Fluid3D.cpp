@@ -3,7 +3,6 @@
 
 #define _USE_MATH_DEFINES
 
-
 #include "fluid3D.h"
 #include "laser.h"
 #include "simulation.h"
@@ -23,6 +22,7 @@ using std::filesystem::current_path;
 using namespace Fluid3D_namespace;
 
 std::tuple<std::vector<double>, std::vector<double>, int> workhorse(Simulation sim);
+
 int main_func();
 
 Fluid3D::Fluid3D()
@@ -95,5 +95,6 @@ int main()
 	//Simulation sim;
 	//std::tuple<std::vector<double>, std::vector<double>, int> data = workhorse(sim);
 	//p.save_to_file(sim, data);
-	return main_func();
+	int i = main_func();
+	return i;
 }

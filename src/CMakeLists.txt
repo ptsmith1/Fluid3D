@@ -15,7 +15,7 @@ set(Fluid3D_PYTHON_DIR $(Fluid3D_DIR)/python)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-add_executable(${PROJECT_NAME} fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp simulation.cpp  )
+add_executable(${PROJECT_NAME} fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp simulation.cpp event_driven_collisions.cpp  )
 
 configure_file(Fluid3DConfig.h.in Fluid3DConfig.h)
 ################################################################################################################
