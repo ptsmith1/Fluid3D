@@ -6,8 +6,8 @@
 class Random_setup
 {
 public:
-	std::uniform_real_distribution<double> pos_range;
-	std::uniform_real_distribution<double> vel_range;
+	std::uniform_real_distribution<double> _pos_range;
+	std::uniform_real_distribution<double> _vel_range;
 	Random_setup(double maxv, double minv, double maxp, double minp);
 };
 
@@ -15,56 +15,64 @@ class New_Particle
 {
 private:
 public:
-	int id;
-	double last_collision_time = 0;
-	std::vector<double> pos;
-	std::vector<double> vel;
-	New_Particle(int id);
-	void init_vectors(Random_setup &random_setup);
-	std::vector<double> get_pos();
-	std::vector<double> get_vel();
-	void set_pos(std::vector<double>& pos);
-	void set_vel(std::vector<double>& vel);
+	int _id;
+	double _last_collision_time = 0;
+	std::vector<double> _pos;
+	std::vector<double> _vel;
+	New_Particle(int _id);
+	void init_vectors(Random_setup &_random_setup);
+};
+
+struct Box
+{
+	double _x_boundary = 20e-10;
+	double _y_boundary = 20e-10;
+	double _z_boundary = 20e-10;
 };
 
 class Event
 {
 public:
-	std::string id;
-	New_Particle p1;
-	New_Particle p2;
-	double time; //time into the simulation
-	double collision_time; //stores how long the simulation timer must be advanced to reach collision
-	double time_of_collision; //stores how long the two particles have travelled for before colliding
+	std::string _id;
+	std::string _type;
+	int _axis_hit;
+	New_Particle _p1;
+	New_Particle _p2;
+	Box _box;
+	double _time; //time into the simulation
+	double _collision_time; //stores how long the simulation timer must be advanced to reach collision
+	double _time_of_collision; //stores how long the two particles have travelled for before colliding
 	Event(New_Particle p1, New_Particle p2, double collision_time, double time_of_collision);
-	void update_velocities();
+	Event(New_Particle p, int axis_hit, double collision_time, double time_of_collision);
 	void update_particles(int i);
 };
 
 class Compute
 {
 private:
-	std::vector<New_Particle> the_boys;
-	double time;
-	const double run_time = 1e-11;
-	const double particle_radius = 1.5e-10;
-	Event popped_event;
+	std::vector<New_Particle> _the_boys;
+	double _time;
+	const double _run_time = 1e-11;
+	const double _particle_radius = 1.5e-10;
+	Event _popped_event;
 
 public:
-	double box_size = 20e-10;
-	double time_save_interval = 1e-14;
-	Random_setup random_setup;
-	int particles = 100;
-	int collisions = 0;
-	std::vector<double> particle_data;
-	std::vector<Event> buddy_list;
-	std::vector<Event> processed_events;
+	Box _box;
+	double _box_size = _box._x_boundary;
+	double _time_save_interval = 1e-13;
+	Random_setup _random_setup;
+	int _particles = 100;
+	int _collisions = 0;
+	std::vector<double> _particle_data;
+	std::vector<Event> _buddy_list;
+	std::vector<Event> _processed_events;
 	Compute();
 	void add_particles();
 	void cycle();
 	void save_data();
 	void save_events();
-	void create_event(New_Particle& p1);
+	void create_collision_event(New_Particle _p1);
+	void create_wall_event(New_Particle _p);
 	std::tuple<double, double> overlap(double, double, double, double);
 	bool get_sign(double x);
 	void order_event_list();
@@ -77,5 +85,7 @@ public:
 	void end_time_update();
 	void data_to_csv();
 };
+
+int test_function();
 
 int main_func();

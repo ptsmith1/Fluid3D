@@ -4,8 +4,10 @@ project(tests VERSION 1.0)
 
 # link against gtest or gtest_main as needed. Eg
 add_executable(${PROJECT_NAME} test.cpp)
+
 target_link_libraries(${PROJECT_NAME}
 	gtest_main
+    Fluid3D_lib
 )
 
 add_test(NAME test COMMAND ${PROJECT_NAME})

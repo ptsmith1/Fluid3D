@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+enable_testing()
 
 project(Fluid3D VERSION 1.0)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 get_filename_component(Fluid3D_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 set(Fluid3D_SOURCE_DIR $(Fluid3D_DIR)/../src)
@@ -15,7 +13,17 @@ set(Fluid3D_PYTHON_DIR $(Fluid3D_DIR)/python)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-add_executable(${PROJECT_NAME} fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp simulation.cpp event_driven_collisions.cpp  )
+set(Headers
+fluid3D.h laser.h workhorse.h domain.h particle.h
+simulation.h event_driven_collisions.h
+)
+set(Sources
+fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp
+simulation.cpp event_driven_collisions.cpp
+)
+
+add_executable(${PROJECT_NAME} ${Sources})
+add_library(${PROJECT_NAME}_lib STATIC ${Sources} ${Headers}  ) #change this to add_executable if you want to compile as executables
 
 configure_file(Fluid3DConfig.h.in Fluid3DConfig.h)
 ################################################################################################################
