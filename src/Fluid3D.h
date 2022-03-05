@@ -15,7 +15,7 @@ namespace Fluid3D_namespace
 
 	public:
 		Fluid3D();
-		void save_to_file(Simulation sim, std::tuple<std::vector<double>, std::vector<double>, int> data);
+		void save_to_file(const Simulation & sim);
 	};
 }
 

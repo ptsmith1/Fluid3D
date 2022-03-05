@@ -1,26 +1,67 @@
 #pragma once
-#include "domain.h"
-#include "particle.h"
+#include "random_setup.h"
+#include <vector>
 
-static class Simulation {
-private:
-	double unit_size = 1e-10;
-	double material_width = 100e-10;
-	double material_height = 100e-10;
-	double material_depth = 100e-10;
-	double zone_size = 10;
-	double region_x = 100;
-	double region_y = 100;
-	double region_z = 100;
+struct Box
+{
+	double _x_boundary = 20e-10;
+	double _y_boundary = 20e-10;
+	double _z_boundary = 20e-10;
+};
+
+class Particle
+{
 public:
-	double dt = 1e-13;
-	double run_time = 1e-10;
-	int steps = run_time / dt;
-	double particle_mass = 1.67e-27;//proton mass
-	double particle_radius = 1.5e-10;
-	double particle_count = 100;
-	Particle p;
-	Material m;
-	Domain d;
+	int _id;
+	double _last_collision_time = 0;
+	std::vector<double> _pos;
+	std::vector<double> _vel;
+	Particle(int _id);
+	Particle();
+	void init_vectors(Random_Setup & _random_setup);
+};
+
+class Event
+{
+	//records the time of a collision event and the position of particles when the event occurs
+	//on creation they hold the starting pos/vel of particle, on execution of event the pos/vel 
+	//are updated to the values immediately after collision
+public:
+	std::string _id;
+	std::string _type;
+	int _axis_hit = 0;
+	int _null = 1;
+	Particle _p1;
+	Particle _p2;
+	double _sim_time = 0; //time into the simulation
+	double _current_time_to_collision = 0; //stores how long the simulation timer must be advanced to reach collision
+	double _original_time_to_collision = 0; //stores how long the two particles have travelled for before colliding
+	Event();
+	Event(int null);
+	Event(Particle p1, Particle p2, double collision_time, double time_of_collision);
+	Event(Particle p, int axis_hit, double collision_time, double time_of_collision);
+};
+
+
+class Simulation {
+public:
+	int _particles = 100;
+	int _collisions = 0;
+	double _sim_time;
+	const double _run_time = 4e-12;
+	const double _particle_radius = 1.5e-10;
+	double _dt = 1e-13;
+	double _time_save_interval = 1e-13;
+	int steps = _run_time / _dt;
+	Box _box;
+	double _box_size = _box._x_boundary;
+	Event *_popped_event;
+	Random_Setup _random_setup;
+	std::vector<Particle> _the_boys;
+	std::vector<double> _particle_data;
+	std::vector<Event> _buddy_list;
+	std::vector<Event> _processed_events;
 	Simulation();
+	void add_particles();
+	void order_event_list();
 };

@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
+import matplotlib.axes
 import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
 import time
 from itertools import product, combinations
+import math
 
 paused = False
 

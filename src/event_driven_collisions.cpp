@@ -6,90 +6,11 @@
 #include <fstream>
 #include <filesystem>
 
-typedef std::chrono::high_resolution_clock Clock;
 
-Random_setup::Random_setup(double maxv, double minv, double maxp, double minp)
-{
-	_pos_range = std::uniform_real_distribution<double>{ minp, maxp };
-	_vel_range = std::uniform_real_distribution<double>{ minv, maxv };
-}
-
-New_Particle::New_Particle(int _id)
-{
-	this->_id = _id;
-	_pos = std::vector<double>(3);
-	_vel = std::vector<double>(3);
-}
-
-void New_Particle::init_vectors(Random_setup& _random_setup)
-{
-	auto _pos_range = _random_setup._pos_range;
-	auto _vel_range = _random_setup._vel_range;
-	std::random_device rnd_device;
-	std::mt19937 mersenne_engine{ rnd_device() };
-	auto gen_pos = [&_pos_range, &mersenne_engine]()
-	{
-		return _pos_range(mersenne_engine);
-	};
-	auto gen_vel = [&_vel_range, &mersenne_engine]()
-	{
-		return _vel_range(mersenne_engine);
-	};
-	generate(begin(_pos), end(_pos), gen_pos);
-	generate(begin(_vel), end(_vel), gen_vel);
-}
-
-Event::Event(New_Particle p1, New_Particle p2, double collision_time, double time_of_collision) :_p1(p1), _p2(p2), _collision_time(collision_time), _time_of_collision(time_of_collision)
-{
-	//collision event
-	_type = "particle";
-	_id = std::to_string(_p1._id) + "-" + std::to_string(_p2._id);
-}
-Event::Event(New_Particle p, int axis_hit, double collision_time, double time_of_collision) : _p1(p), _axis_hit(axis_hit), _p2(NULL), _collision_time(collision_time), _time_of_collision(time_of_collision)
-{
-	//wall event
-	_type = "wall";
-	_id = std::to_string(_p1._id) + "-wall";
-}
-
-void Event::update_particles(int i)
-{
-	_p1 = i;
-	_p2 = i;
-}
-
-Compute::Compute() : _random_setup(300, -300, _box_size, -_box_size), _popped_event(0,0,0,0)
-{
-	_time = 0;
-	add_particles();
-	//Create each particles event and add to list in order of time
-	for (New_Particle _p1 : _the_boys)
-	{
-		create_collision_event(_p1);
-		create_wall_event(_p1);
-	}
-	order_event_list();
-	save_data();
-	cycle();
-	save_events();
-	save_data();
-	data_to_csv();
-}
-
-void Compute::add_particles()
-{
-	for (int i = 0; i < _particles; i++)
-	{
-		New_Particle p(i);
-		p.init_vectors(_random_setup);
-		_the_boys.push_back(p);
-	}
-}
-
-void Compute::create_collision_event(New_Particle _p1)
+Event create_collision_event(Simulation const &sim, Particle const& _p1)
 {
 	//Create each particles event and add to list in order of time
-	for (New_Particle _p2 : _the_boys)
+	for (Particle const &_p2 : sim._the_boys)
 	{
 		if (_p2._id < _p1._id)
 		{
@@ -97,23 +18,23 @@ void Compute::create_collision_event(New_Particle _p1)
 			double t1 = 0, t2 = 0;
 			double xdiff = _p1._pos[0] - _p2._pos[0];
 			double vxdiff = _p1._vel[0] - _p2._vel[0];
-			t1 = (2 * _particle_radius - xdiff) / vxdiff;
-			t2 = (-2 * _particle_radius - xdiff) / vxdiff;
+			t1 = (2 * sim._particle_radius - xdiff) / vxdiff;
+			t2 = (-2 * sim._particle_radius - xdiff) / vxdiff;
 			if (t1 >= 0 && t2 >= 0)
 			{
 				double t3 = 0, t4 = 0;
 				double ydiff = _p1._pos[1] - _p2._pos[1];
 				double vydiff = _p1._vel[1] - _p2._vel[1];
-				t3 = (2 * _particle_radius - ydiff) / vydiff;
-				t4 = (-2 * _particle_radius - ydiff) / vydiff;
+				t3 = (2 * sim._particle_radius - ydiff) / vydiff;
+				t4 = (-2 * sim._particle_radius - ydiff) / vydiff;
 				auto intermediate_interval = overlap(t1, t2, t3, t4);
 				if (t3 >= 0 && t4 >= 0 && std::get<0>(intermediate_interval) != -1)
 				{
 					double t5 = 0, t6 = 0;
 					double zdiff = _p1._pos[2] - _p2._pos[2];
 					double vzdiff = _p1._vel[2] - _p2._vel[2];
-					t5 = (2 * _particle_radius - zdiff) / vzdiff;
-					t6 = (-2 * _particle_radius - zdiff) / vzdiff;
+					t5 = (2 * sim._particle_radius - zdiff) / vzdiff;
+					t6 = (-2 * sim._particle_radius - zdiff) / vzdiff;
 					auto valid_interval = overlap(std::get<0>(intermediate_interval), std::get<1>(intermediate_interval), t5, t6);
 					if (std::get<0>(valid_interval) != -1)
 					{
@@ -125,53 +46,53 @@ void Compute::create_collision_event(New_Particle _p1)
 						if (sep_at_t <= 3e-10)
 						{
 							Event e(_p1, _p2, mid_time, mid_time);
-							if (!check_dup_event(e)) { _buddy_list.push_back(e); }
-							std::cout << "Created collision event ID: " << e._id << std::endl;
+							if (!check_dup_event(sim, e)) { return e; }
 						}
 					}
 				}
 			}
 		}
 	}
+	Event e(NULL);//this is a fudge, there must be a better way
+	return e;
 }
 
-void Compute::create_wall_event(New_Particle _p)
+Event create_wall_event(Simulation sim, Particle const& _p)
 {
 	double time_to_x_wall =0, time_to_y_wall=0, time_to_z_wall=0;
 	std::vector<double> wall_vector = { 0,0,0 };
 	if (_p._vel[0]>0)
 	{
-		time_to_x_wall = (_box._x_boundary - _p._pos[0]) / _p._vel[0];
+		time_to_x_wall = (sim._box._x_boundary - _p._pos[0]) / _p._vel[0];
 	}
 	else if (_p._vel[0] < 0)
 	{
-		time_to_x_wall = (-_box._x_boundary - _p._pos[0]) / _p._vel[0];
+		time_to_x_wall = (-sim._box._x_boundary - _p._pos[0]) / _p._vel[0];
 	}
 	if (_p._vel[1] > 0)
 	{
-		time_to_y_wall = (_box._y_boundary - _p._pos[1]) / _p._vel[1];
+		time_to_y_wall = (sim._box._y_boundary - _p._pos[1]) / _p._vel[1];
 	}
 	else if (_p._vel[1] < 0)
 	{
-		time_to_y_wall = (-_box._y_boundary - _p._pos[1]) / _p._vel[1];
+		time_to_y_wall = (-sim._box._y_boundary - _p._pos[1]) / _p._vel[1];
 	}
 	if (_p._vel[2] > 0)
 	{
-		time_to_z_wall = (_box._z_boundary - _p._pos[2]) / _p._vel[2];
+		time_to_z_wall = (sim._box._z_boundary - _p._pos[2]) / _p._vel[2];
 	}
 	else if (_p._vel[2] < 0)
 	{
-		time_to_z_wall = (-_box._y_boundary - _p._pos[2]) / _p._vel[2];
+		time_to_z_wall = (-sim._box._y_boundary - _p._pos[2]) / _p._vel[2];
 	}
 	std::vector<double> wall_times = { time_to_x_wall,time_to_y_wall,time_to_z_wall };
 	std::vector<double>::iterator result = std::min_element(wall_times.begin(), wall_times.end());
 	int axis_hit = std::distance(wall_times.begin(), result);
 	Event e(_p, axis_hit, result[0],result[0]);
-	if (!check_dup_event(e)) { _buddy_list.push_back(e); }
-	std::cout << "Created wall event ID: " << e._id << std::endl;
+	return e;
 }
 
-std::tuple<double, double> Compute::overlap(double t1, double t2, double t3, double t4)
+std::tuple<double, double> overlap(double t1, double t2, double t3, double t4)
 {
 	//takes two time periods t1-t2 and t3-t4 and returns any overlap time period
 	if (t1 > t2)
@@ -208,7 +129,7 @@ std::tuple<double, double> Compute::overlap(double t1, double t2, double t3, dou
 	}
 }
 
-bool Compute::get_sign(double x)
+bool get_sign(double x)
 {
 	if (x >= 0)
 	{
@@ -220,128 +141,144 @@ bool Compute::get_sign(double x)
 	}
 }
 
-struct reorder
+Event compute_event(Simulation &sim)
 {
-	bool operator() (Event e1, Event e2) 
-	{ 
-		return (e1._collision_time > e2._collision_time); //change > to order vector back to front
-	}
-} reorderer;
-
-void Compute::order_event_list()
-{
-	std::sort(_buddy_list.begin(), _buddy_list.end(), reorderer);
-}
-
-void Compute::cycle()
-{
-	while (_time < _run_time && !_buddy_list.empty())
-	{
-		//compute first event, invalidate some events, calculate new events for these particles, compute next event
-		std::cout << "Before collision:" << std::endl;
-		_popped_event = _buddy_list.back();
-		print_event_details(_popped_event);
-		compute_event();
-		update_event_times();
-		update_event_list();
-		order_event_list();
-		std::cout << "After collision:" << std::endl;
-		print_event_details(_popped_event);
-		_time += _popped_event._collision_time;
-		std::cout << "This timestep = " << _popped_event._collision_time << " Total time = " << _time << std::endl;
-		std::cout << std::endl;
-		_processed_events.push_back(_popped_event);
-	}
-	end_time_update();
-}
-
-void Compute::compute_event()
-{
+	//for test purposes create a new event with values from popped event, update this event, then return it 
+	//and set the event pointed to by popped event equal to this new event
 	//this currently updates vel and pos of popped event particles as well as actual particles in the boys
 	//dont currently need to update properties of popped event but may need to at some point
-	_popped_event._time = _time + _popped_event._collision_time;
-	if (_popped_event._type == "collision")
+	Event e = *sim._popped_event;
+	if (sim._popped_event->_type == "particle")
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			_popped_event._p1._pos[i] = _the_boys[_popped_event._p1._id]._pos[i] + _popped_event._time_of_collision * _popped_event._p1._vel[i];
-			_popped_event._p2._pos[i] = _the_boys[_popped_event._p2._id]._pos[i] + _popped_event._time_of_collision * _popped_event._p2._vel[i];
+			e._p1._pos[i] = sim._the_boys[e._p1._id]._pos[i] + e._original_time_to_collision * sim._the_boys[e._p1._id]._vel[i];
+			e._p2._pos[i] = sim._the_boys[e._p2._id]._pos[i] + e._original_time_to_collision * sim._the_boys[e._p2._id]._vel[i];
 		}
-		double x_sep = _popped_event._p1._pos[0] - _popped_event._p2._pos[0];
-		double y_sep = _popped_event._p1._pos[1] - _popped_event._p2._pos[1];
-		double z_sep = _popped_event._p1._pos[2] - _popped_event._p2._pos[2];
-		double vx_sep = _popped_event._p1._vel[0] - _popped_event._p2._vel[0];
-		double vy_sep = _popped_event._p1._vel[1] - _popped_event._p2._vel[1];
-		double vz_sep = _popped_event._p1._vel[2] - _popped_event._p2._vel[2];
+		double x_sep = e._p1._pos[0] - e._p2._pos[0];
+		double y_sep = e._p1._pos[1] - e._p2._pos[1];
+		double z_sep = e._p1._pos[2] - e._p2._pos[2];
+		double vx_sep = e._p1._vel[0] - e._p2._vel[0];
+		double vy_sep = e._p1._vel[1] - e._p2._vel[1];
+		double vz_sep = e._p1._vel[2] - e._p2._vel[2];
 
-		_popped_event._p1._vel[0] += -x_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * _particle_radius * _particle_radius);
-		_popped_event._p2._vel[0] += x_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * _particle_radius * _particle_radius);
+		e._p1._vel[0] += -x_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * sim._particle_radius * sim._particle_radius);
+		e._p2._vel[0] += x_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * sim._particle_radius * sim._particle_radius);
 
-		_popped_event._p1._vel[1] += -y_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * _particle_radius * _particle_radius);
-		_popped_event._p2._vel[1] += y_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * _particle_radius * _particle_radius);
+		e._p1._vel[1] += -y_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * sim._particle_radius * sim._particle_radius);
+		e._p2._vel[1] += y_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * sim._particle_radius * sim._particle_radius);
 
-		_popped_event._p1._vel[2] += -z_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * _particle_radius * _particle_radius);
-		_popped_event._p2._vel[2] += z_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * _particle_radius * _particle_radius);
+		e._p1._vel[2] += -z_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * sim._particle_radius * sim._particle_radius);
+		e._p2._vel[2] += z_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * sim._particle_radius * sim._particle_radius);
 
 		//updates particles in the boys
-		_the_boys[_popped_event._p1._id]._vel = _popped_event._p1._vel;
-		_the_boys[_popped_event._p1._id]._pos = _popped_event._p1._pos;
-		_the_boys[_popped_event._p2._id]._vel = _popped_event._p2._vel;
-		_the_boys[_popped_event._p2._id]._pos = _popped_event._p2._pos;
-		_popped_event._p1._last_collision_time = _time + _popped_event._collision_time; //time of this collision
-		_popped_event._p2._last_collision_time = _time + _popped_event._collision_time;
-		_the_boys[_popped_event._p1._id]._last_collision_time = _popped_event._p1._last_collision_time;
-		_the_boys[_popped_event._p2._id]._last_collision_time = _popped_event._p2._last_collision_time;
+		sim._the_boys[e._p1._id]._vel = e._p1._vel;
+		sim._the_boys[e._p1._id]._pos = e._p1._pos;
+		sim._the_boys[e._p2._id]._vel = e._p2._vel;
+		sim._the_boys[e._p2._id]._pos = e._p2._pos;
+		//update timings
+		e._p1._last_collision_time = sim._sim_time; //time of this collision
+		e._p2._last_collision_time = sim._sim_time;
+		sim._the_boys[e._p1._id]._last_collision_time = sim._sim_time;
+		sim._the_boys[e._p2._id]._last_collision_time = sim._sim_time;
 	}
 
-	else if (_popped_event._type == "wall")
+	else if (e._type == "wall")
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			_popped_event._p1._pos[i] = _the_boys[_popped_event._p1._id]._pos[i] + _popped_event._time_of_collision * _popped_event._p1._vel[i];
+			e._p1._pos[i] = sim._the_boys[e._p1._id]._pos[i] + e._original_time_to_collision * e._p1._vel[i];
 		}
-		_popped_event._p1._vel[_popped_event._axis_hit] *= -1;
-		_the_boys[_popped_event._p1._id]._vel = _popped_event._p1._vel;
-		_the_boys[_popped_event._p1._id]._pos = _popped_event._p1._pos;
-		_popped_event._p1._last_collision_time = _time + _popped_event._collision_time; //time of this collision
-		_the_boys[_popped_event._p1._id]._last_collision_time = _popped_event._p1._last_collision_time;
+		e._p1._vel[e._axis_hit] *= -1;
+		sim._the_boys[e._p1._id]._vel = e._p1._vel;
+		sim._the_boys[e._p1._id]._pos = e._p1._pos;
+		e._p1._last_collision_time = sim._sim_time; //time of this collision
+		sim._the_boys[e._p1._id]._last_collision_time = sim._sim_time;
 	}
-
-	_buddy_list.pop_back();
-	_collisions++;
+	e._sim_time = sim._sim_time;
+	sim._collisions++;
+	return e;
 }
 
-void Compute::update_event_list()
+std::vector<Event> update_event_list(Simulation sim)
 {
-	//create_collision_event(_popped_event._p1);
-	for (Event &e : _buddy_list)
+	std::vector<Particle> affected_particles = { sim._popped_event->_p1 };
+	if (sim._popped_event->_type == "particle")
 	{
-		if (_popped_event._p1._id == e._p1._id || (_popped_event._p2._id == e._p1._id && e._type != "wall") || _popped_event._p1._id == e._p2._id || (_popped_event._p2._id == e._p2._id && e._type != "wall"))
+		affected_particles.push_back(sim._popped_event->_p2);
+	}
+	//delete old events
+	for (Event& e : sim._buddy_list)
+	{
+		if (e._type == "wall")
 		{
-			//new events for particles that would have hit the collided particles had they not collided
-			e._collision_time = 999;
-			create_collision_event(e._p1);
-			create_wall_event(e._p1);
-			if (_popped_event._type == "particle")
+			if (sim._popped_event->_p1._id == e._p1._id)
 			{
-				create_collision_event(e._p2);
-				create_wall_event(e._p2);
+				//pop event
+				std::string id = sim._popped_event->_id;
+				auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
+				if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
+			}
+
+			if (sim._popped_event->_type == "particle")
+			{
+				if (sim._popped_event->_p2._id == e._p1._id)
+				{
+					std::string id = sim._popped_event->_id;
+					auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
+					if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
+				}
+			}
+		}
+
+		if (e._type == "particle")
+		{
+			if (sim._popped_event->_p1._id == e._p1._id)
+			{
+				//pop event
+				affected_particles.push_back(e._p2);
+				std::string id = sim._popped_event->_id;
+				auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
+				if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
+			}
+
+			if (sim._popped_event->_p1._id == e._p2._id)
+			{
+				//pop event
+				affected_particles.push_back(e._p1);
+				std::string id = sim._popped_event->_id;
+				auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
+				if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
+			}
+
+			if (sim._popped_event->_type == "particle")
+			{
+				if (sim._popped_event->_p2._id == e._p1._id || sim._popped_event->_p2._id == e._p2._id)
+				{
+					//pop event
+					std::string id = sim._popped_event->_id;
+					auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
+					if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
+				}
+
 			}
 		}
 	}
 
-	create_wall_event(_popped_event._p1);
-	if (_popped_event._type == "particle")
+	std::vector<Event> new_events;
+	for (Particle const& p : affected_particles)
 	{
-		create_collision_event(_popped_event._p2);
-		create_wall_event(_popped_event._p2);
+		Event new_e = create_collision_event(sim, p);
+		if (new_e._null != NULL) { new_events.push_back(new_e); std::cout << "Event added: " << new_e._id << std::endl; }
+		new_e = create_wall_event(sim, p);
+		if (new_e._null != NULL) { new_events.push_back(new_e); std::cout << "Event added: " << new_e._id << std::endl; }
 	}
-
+	return new_events;
 }
 
-bool Compute::check_dup_event(Event new_event)
+bool check_dup_event(Simulation const & sim, Event new_event)
 { //return true if id of new event matches the id/reverse id of event in event list
-	for (Event &e : _buddy_list)
+	for (Event e : sim._buddy_list)
 	{
 		std::string reversed(new_event._id.rbegin(), new_event._id.rend());
 		if (e._id == new_event._id || e._id == reversed) {return true;}
@@ -349,57 +286,45 @@ bool Compute::check_dup_event(Event new_event)
 	return false;
 }
 
-void Compute::update_event_times()
+void update_event_times(Simulation &sim)
 {
-	for (Event& e : _buddy_list)
+	for (Event& e : sim._buddy_list)
 	{
-		e._collision_time = e._collision_time - _popped_event._collision_time;
+		e._current_time_to_collision = e._current_time_to_collision - sim._popped_event->_current_time_to_collision;
 	}
 }
 
-void Compute::print_event_details(Event e)
+void print_event_details(Event const & e)
 {
 	std::cout << "ID: " << e._id << std::endl;
 	std::cout << "Particle " << e._p1._id << " position: (" << e._p1._pos[0] << ", " << e._p1._pos[1] << ", " << e._p1._pos[2] << ") velocity: (" << e._p1._vel[0] << ", " << e._p1._vel[1] << ", " << e._p1._vel[2] << ")" << std::endl;
 	std::cout << "Particle " << e._p2._id << " position : (" << e._p2._pos[0] << ", " << e._p2._pos[1] << ", " << e._p2._pos[2] << ") velocity : (" << e._p2._vel[0] << ", " << e._p2._vel[1] << ", " << e._p2._vel[2] << ")" << std::endl;
 }
 
-void Compute::end_time_update()
+void save_events(Simulation &sim)
 {
-	for (New_Particle& p : _the_boys)
-	{
-		double travel_time = _time - p._last_collision_time;
-		for (int i = 0; i < 3; i++)
-		{
-			p._pos[i] += p._vel[i] * travel_time;
-		}
-	}
-}
-
-void Compute::save_events()
-{
-	std::reverse(_processed_events.begin(), _processed_events.end());
+	std::reverse(sim._processed_events.begin(), sim._processed_events.end());
 	double save_time = 0;
 	int it = 0;
-	while (save_time < _run_time)
+	while (save_time < sim._run_time)
 	{
 		it++;
-		save_time += _time_save_interval;
-		int offset = (_particles * 6) * (it-1);
-		for (New_Particle &p : _the_boys)
+		save_time += sim._time_save_interval;
+		int offset = (sim._particles * 6) * (it-1);
+		for (Particle &p : sim._the_boys)
 		{
-			_particle_data.push_back(_particle_data[offset + (p._id * 6)] + _time_save_interval * _particle_data[offset + (p._id * 6) + 3]);
-			_particle_data.push_back(_particle_data[offset + (p._id * 6)+1] + _time_save_interval * _particle_data[offset + (p._id * 6) + 4]);
-			_particle_data.push_back(_particle_data[offset + (p._id * 6)+2] + _time_save_interval * _particle_data[offset + (p._id * 6) + 5]);
-			_particle_data.push_back(_particle_data[offset + (p._id * 6)+3]);
-			_particle_data.push_back(_particle_data[offset + (p._id * 6)+4]);
-			_particle_data.push_back(_particle_data[offset + (p._id * 6)+5]);
+			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)] + sim._time_save_interval * sim._particle_data[offset + (p._id * 6) + 3]);
+			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)+1] + sim._time_save_interval * sim._particle_data[offset + (p._id * 6) + 4]);
+			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)+2] + sim._time_save_interval * sim._particle_data[offset + (p._id * 6) + 5]);
+			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)+3]);
+			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)+4]);
+			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)+5]);
 		}
 		//modifies the data that has just been added due to an event having occurred
-		offset = (_particles * 6) * (it);
-		for (Event &e : _processed_events)
+		offset = (sim._particles * 6) * (it);
+		for (Event &e : sim._processed_events)
 		{
-			if (save_time>e._time && (save_time - e._time) <= _time_save_interval)
+			if (save_time>e._sim_time && (save_time - e._sim_time) <= sim._time_save_interval)
 			{
 				//if an event time has been reached, then the particles in the event have their saved pos/vel updated in the next save 
 				//timestep. This overwrites the previous data which assumed no collision had occurred. 
@@ -407,20 +332,20 @@ void Compute::save_events()
 				//there is a bit of a complex issue here where hopping to the timestep after the one where an event is added to
 				//the output data, updates a particles positio with a full timestep of its new velocity when part of that 
 				//timestep should use the old velocity before the event
-				_particle_data[offset + (e._p1._id * 6)] = e._p1._pos[0] + (e._p1._vel[0] * (save_time - e._time));
-				_particle_data[offset + (e._p1._id * 6) + 1] = e._p1._pos[1] + (e._p1._vel[1] * (save_time - e._time));
-				_particle_data[offset + (e._p1._id * 6) + 2] = e._p1._pos[2] + (e._p1._vel[2] * (save_time - e._time));
-				_particle_data[offset + (e._p1._id * 6) + 3] = e._p1._vel[0];
-				_particle_data[offset + (e._p1._id * 6) + 4] = e._p1._vel[1];
-				_particle_data[offset + (e._p1._id * 6) + 5] = e._p1._vel[2];
+				sim._particle_data[offset + (e._p1._id * 6)] = e._p1._pos[0] + (e._p1._vel[0] * (save_time - e._sim_time));
+				sim._particle_data[offset + (e._p1._id * 6) + 1] = e._p1._pos[1] + (e._p1._vel[1] * (save_time - e._sim_time));
+				sim._particle_data[offset + (e._p1._id * 6) + 2] = e._p1._pos[2] + (e._p1._vel[2] * (save_time - e._sim_time));
+				sim._particle_data[offset + (e._p1._id * 6) + 3] = e._p1._vel[0];
+				sim._particle_data[offset + (e._p1._id * 6) + 4] = e._p1._vel[1];
+				sim._particle_data[offset + (e._p1._id * 6) + 5] = e._p1._vel[2];
 				if (e._type != "wall")
 				{
-					_particle_data[offset + (e._p2._id * 6)] = e._p2._pos[0] + (e._p2._vel[0] * (save_time - e._time));
-					_particle_data[offset + (e._p2._id * 6) + 1] = e._p2._pos[1] + (e._p2._vel[1] * (save_time - e._time));
-					_particle_data[offset + (e._p2._id * 6) + 2] = e._p2._pos[2] + (e._p2._vel[2] * (save_time - e._time));
-					_particle_data[offset + (e._p2._id * 6) + 3] = e._p2._vel[0];
-					_particle_data[offset + (e._p2._id * 6) + 4] = e._p2._vel[1];
-					_particle_data[offset + (e._p2._id * 6) + 5] = e._p2._vel[2];
+					sim._particle_data[offset + (e._p2._id * 6)] = e._p2._pos[0] + (e._p2._vel[0] * (save_time - e._sim_time));
+					sim._particle_data[offset + (e._p2._id * 6) + 1] = e._p2._pos[1] + (e._p2._vel[1] * (save_time - e._sim_time));
+					sim._particle_data[offset + (e._p2._id * 6) + 2] = e._p2._pos[2] + (e._p2._vel[2] * (save_time - e._sim_time));
+					sim._particle_data[offset + (e._p2._id * 6) + 3] = e._p2._vel[0];
+					sim._particle_data[offset + (e._p2._id * 6) + 4] = e._p2._vel[1];
+					sim._particle_data[offset + (e._p2._id * 6) + 5] = e._p2._vel[2];
 				}
 				
 				
@@ -429,63 +354,71 @@ void Compute::save_events()
 	}
 }
 
-void Compute::save_data()
+void save_data(Simulation & sim)
 {
 	//saves current particle positions and velocities to array
-	for (New_Particle p : _the_boys)
+	for (Particle p : sim._the_boys)
 	{
-		_particle_data.push_back(p._pos[0]);
-		_particle_data.push_back(p._pos[1]);
-		_particle_data.push_back(p._pos[2]);
-		_particle_data.push_back(p._vel[0]);
-		_particle_data.push_back(p._vel[1]);
-		_particle_data.push_back(p._vel[2]);
+		sim._particle_data.push_back(p._pos[0]);
+		sim._particle_data.push_back(p._pos[1]);
+		sim._particle_data.push_back(p._pos[2]);
+		sim._particle_data.push_back(p._vel[0]);
+		sim._particle_data.push_back(p._vel[1]);
+		sim._particle_data.push_back(p._vel[2]);
 	}
 }
 
-void Compute::data_to_csv()
+void end_time_update(Simulation & sim)
 {
-	std::ofstream f;
-	std::filesystem::path filePath = std::filesystem::current_path();
-	filePath.append("fluid_data.csv");
-	f.open(filePath.string());
-	f << "sim_size," << "box_size," << "collisions," << "timesteps" << "\n";
-	f << _particles << "," << _box_size << "," << _collisions << "," << (_run_time / _time_save_interval) + 1 << "\n";
-	f << "Timestep";
-	for (int j = 0; j < _particles; j += 1)
+	//im not sure if this is still necessary
+	for (Particle& p : sim._the_boys)
 	{
-		f << ",x" << j << ",y" << j << ",z" << j << ",vx" << j << ",vy" << j << ",vz" << j;
-	}
-	f << "\n";
-
-	for (int it_col = 0; it_col < (_run_time / _time_save_interval) + 1; it_col++)
-	{
-		f << it_col;
-		for (int it_row = 0; it_row < (_particles * 6); it_row++)
+		double travel_time = sim._sim_time - p._last_collision_time;
+		for (int i = 0; i < 3; i++)
 		{
-			f << "," << _particle_data[it_row + _particles * 6 * it_col];
+			p._pos[i] += p._vel[i] * travel_time;
 		}
-		f << "\n";
 	}
-	f.close();
 }
 
-int test_function()
+void cycle(Simulation& sim)
 {
-	return 5;
+	while (sim._sim_time < sim._run_time && !sim._buddy_list.empty())
+	{
+		//compute first event, invalidate some events, calculate new events for these particles, compute next event
+		std::cout << "Before collision:" << std::endl;
+		sim._popped_event = &sim._buddy_list.back();
+		sim._sim_time += sim._popped_event->_current_time_to_collision;
+		print_event_details(*sim._popped_event);
+		std::cout << "This timestep = " << sim._popped_event->_current_time_to_collision << " Total time = " << sim._sim_time << std::endl;
+		*sim._popped_event = compute_event(sim);
+		update_event_times(sim);
+		std::vector<Event> new_events = update_event_list(sim);
+		std::cout << "After collision:" << std::endl;
+		print_event_details(*sim._popped_event);
+		std::cout << std::endl;
+		//end of cycle: add old event to processed events, pop old event, add new event
+		sim._processed_events.push_back(*sim._popped_event);
+		sim._buddy_list.pop_back();
+		sim._buddy_list.insert(std::end(sim._buddy_list), std::begin(new_events), std::end(new_events));
+		sim.order_event_list();
+	}
+	end_time_update(sim);
 }
 
-int main_func()
+void setup_computation(Simulation &sim)
 {
-	auto t1 = Clock::now();
-	Compute compute;
-	compute.cycle();
-	auto t2 = Clock::now();
-	std::cout << "OOP method time:" << (std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count()) * 1e-9 << std::endl;
-	//asdf
-	//sdaf
-	//fa
-	//dsff
-	//af
-	return 0;
+	//Create each particles event and add to list in order of time
+	for (Particle const & _p1 : sim._the_boys)
+	{
+		Event e = create_collision_event(sim, _p1);
+		if (e._null!=NULL) { sim._buddy_list.push_back(e); }
+		e = create_wall_event(sim, _p1);
+		if (e._null != NULL) { sim._buddy_list.push_back(e); }
+	}
+	sim.order_event_list();
+	save_data(sim);
+	cycle(sim);
+	save_events(sim);
+	save_data(sim);
 }

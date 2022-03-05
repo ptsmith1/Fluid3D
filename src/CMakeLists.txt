@@ -14,11 +14,11 @@ set(Fluid3D_PYTHON_DIR $(Fluid3D_DIR)/python)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 set(Headers
-fluid3D.h laser.h workhorse.h domain.h particle.h
+fluid3D.h workhorse.h random_setup.h 
 simulation.h event_driven_collisions.h
 )
 set(Sources
-fluid3D.cpp laser.cpp workhorse.cpp domain.cpp particle.cpp
+fluid3D.cpp workhorse.cpp random_setup.cpp
 simulation.cpp event_driven_collisions.cpp
 )
 

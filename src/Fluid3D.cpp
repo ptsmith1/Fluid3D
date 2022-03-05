@@ -4,8 +4,8 @@
 #define _USE_MATH_DEFINES
 
 #include "fluid3D.h"
-#include "laser.h"
 #include "simulation.h"
+#include "event_driven_collisions.h"
 
 #include <memory>
 #include <vector>
@@ -15,8 +15,6 @@
 #include <filesystem>
 #include <cmath>
 #include <string>
-#include "adder.h"
-#include "GLFW/glfw3.h"
 
 using std::filesystem::current_path;
 using namespace Fluid3D_namespace;
@@ -29,32 +27,27 @@ Fluid3D::Fluid3D()
 {
 }
 
-void Fluid3D::save_to_file(Simulation sim, std::tuple<std::vector<double>, std::vector<double>, int> data)
+void Fluid3D::save_to_file(const Simulation &sim)
 {
-	auto positional_data = std::get<0>(data);
-	auto velocity_data = std::get<1>(data);
-	auto collisions = std::get<2>(data);
 	std::ofstream f;
-	std::filesystem::path filePath = current_path();
+	std::filesystem::path filePath = std::filesystem::current_path();
 	filePath.append("fluid_data.csv");
 	f.open(filePath.string());
 	f << "sim_size," << "box_size," << "collisions," << "timesteps" << "\n";
-	f << sim.particle_count << "," << sim.d.material_type.width << "," << collisions << "," << sim.steps << "\n";
+	f << sim._particles << "," << sim._box_size << "," << sim._collisions << "," << (sim._run_time / sim._time_save_interval) + 1 << "\n";
 	f << "Timestep";
-	for (int j = 0; j < sim.particle_count; j += 1)
+	for (int j = 0; j < sim._particles; j += 1)
 	{
 		f << ",x" << j << ",y" << j << ",z" << j << ",vx" << j << ",vy" << j << ",vz" << j;
 	}
 	f << "\n";
 
-	for (int i = 0; i < sim.steps; i++)
+	for (int it_col = 0; it_col < (sim._run_time / sim._time_save_interval) + 1; it_col++)
 	{
-		f << i;
-		for (int j = 0; j < (sim.particle_count*3); j += 3)
+		f << it_col;
+		for (int it_row = 0; it_row < (sim._particles * 6); it_row++)
 		{
-			f << "," << positional_data[j + sim.particle_count * 3 * i] << "," << positional_data[j + sim.particle_count * 3 * i + 1] << "," << positional_data[j + sim.particle_count * 3 * i + 2];
-			f << "," << velocity_data[j + sim.particle_count * 3 * i] << "," << velocity_data[j + sim.particle_count * 3 * i + 1] << "," << velocity_data[j + sim.particle_count * 3 * i + 2];
-			//f << "," << acceleration_data[j + sim_size * i] << "," << acceleration_data[j + sim_size * i + 1] << "," << acceleration_data[j + sim_size * i + 2];
+			f << "," << sim._particle_data[it_row + sim._particles * 6 * it_col];
 		}
 		f << "\n";
 	}
@@ -62,39 +55,11 @@ void Fluid3D::save_to_file(Simulation sim, std::tuple<std::vector<double>, std::
 }
 
 
-void glfw_stuff()
-{
-	GLFWwindow* window;
-	if (!glfwInit())
-	{
-		fprintf(stderr, "Failed to initialize GLFW\n");
-		exit(EXIT_FAILURE);
-	}
-	window = glfwCreateWindow(300, 300, "Gears", NULL, NULL);
-	if (!window)
-	{
-		fprintf(stderr, "Failed to open GLFW window\n");
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-	}
-
-	// Main loop
-	while (!glfwWindowShouldClose(window))
-	{
-		// Swap buffers
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
-}
-
 int main()
 {
-	//std::cout<<adder(5,2)<<std::endl;
-	//glfw_stuff();
-	//Fluid3D p;
-	//Simulation sim;
-	//std::tuple<std::vector<double>, std::vector<double>, int> data = workhorse(sim);
-	//p.save_to_file(sim, data);
-	int i = main_func();
-	return i;
+	Fluid3D fluid3D;
+	Simulation sim;
+	setup_computation(sim);
+	fluid3D.save_to_file(sim);
+	return 0;
 }
