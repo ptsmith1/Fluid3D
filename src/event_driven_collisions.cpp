@@ -12,18 +12,23 @@ Event create_collision_event(Simulation const &sim, Particle const& _p1)
 	//Create each particles event and add to list in order of time
 	for (Particle const &_p2 : sim._the_boys)
 	{
+		double time_since_last_collision = _p1._last_collision_time - _p2._last_collision_time;
+		//error -- if p2 has hit something then its pos needs updating, (_p2._pos[0]+ time_since_last_collision* _p2._vel[0]), 
+		//as otherwise the algorithm assumes both particles are in the same time reference frame
+		//need to rewrite this so each particle has a time it must be advanced for the collision to be valid
+		//its sort of working with the current fudge so im making a commit
 		if (_p2._id < _p1._id)
 		{
 			double time_to_collision = 0;
 			double t1 = 0, t2 = 0;
-			double xdiff = _p1._pos[0] - _p2._pos[0];
+			double xdiff = _p1._pos[0] - (_p2._pos[0]+ time_since_last_collision* _p2._vel[0]);
 			double vxdiff = _p1._vel[0] - _p2._vel[0];
 			t1 = (2 * sim._particle_radius - xdiff) / vxdiff;
 			t2 = (-2 * sim._particle_radius - xdiff) / vxdiff;
 			if (t1 >= 0 && t2 >= 0)
 			{
 				double t3 = 0, t4 = 0;
-				double ydiff = _p1._pos[1] - _p2._pos[1];
+				double ydiff = _p1._pos[1] - (_p2._pos[1] + time_since_last_collision * _p2._vel[1]);
 				double vydiff = _p1._vel[1] - _p2._vel[1];
 				t3 = (2 * sim._particle_radius - ydiff) / vydiff;
 				t4 = (-2 * sim._particle_radius - ydiff) / vydiff;
@@ -31,7 +36,7 @@ Event create_collision_event(Simulation const &sim, Particle const& _p1)
 				if (t3 >= 0 && t4 >= 0 && std::get<0>(intermediate_interval) != -1)
 				{
 					double t5 = 0, t6 = 0;
-					double zdiff = _p1._pos[2] - _p2._pos[2];
+					double zdiff = _p1._pos[2] - (_p2._pos[2] + time_since_last_collision * _p2._vel[2]);
 					double vzdiff = _p1._vel[2] - _p2._vel[2];
 					t5 = (2 * sim._particle_radius - zdiff) / vzdiff;
 					t6 = (-2 * sim._particle_radius - zdiff) / vzdiff;
@@ -39,13 +44,14 @@ Event create_collision_event(Simulation const &sim, Particle const& _p1)
 					if (std::get<0>(valid_interval) != -1)
 					{
 						double mid_time = (std::get<0>(intermediate_interval) + std::get<1>(intermediate_interval)) / 2; //valid if no acc
-						double x_sep = (_p1._pos[0] + mid_time * _p1._vel[0]) - (_p2._pos[0] + mid_time * _p2._vel[0]);
-						double y_sep = (_p1._pos[1] + mid_time * _p1._vel[1]) - (_p2._pos[1] + mid_time * _p2._vel[1]);
-						double z_sep = (_p1._pos[2] + mid_time * _p1._vel[2]) - (_p2._pos[2] + mid_time * _p2._vel[2]);
+						double x_sep = (_p1._pos[0] + mid_time * _p1._vel[0]) - ((_p2._pos[0] + time_since_last_collision * _p2._vel[0]) + mid_time * _p2._vel[0]);
+						double y_sep = (_p1._pos[1] + mid_time * _p1._vel[1]) - ((_p2._pos[1] + time_since_last_collision * _p2._vel[1]) + mid_time * _p2._vel[1]);
+						double z_sep = (_p1._pos[2] + mid_time * _p1._vel[2]) - ((_p2._pos[2] + time_since_last_collision * _p2._vel[2]) + mid_time * _p2._vel[2]);
 						double sep_at_t = sqrt(x_sep * x_sep + y_sep * y_sep + z_sep * z_sep);
 						if (sep_at_t <= 3e-10)
 						{
 							Event e(_p1, _p2, mid_time, mid_time);
+							e._p2._pos = { (_p2._pos[0] + time_since_last_collision * _p2._vel[0]),(_p2._pos[1] + time_since_last_collision * _p2._vel[1]),(_p2._pos[2] + time_since_last_collision * _p2._vel[2]) };//new and fudgey
 							if (!check_dup_event(sim, e)) { return e; }
 						}
 					}
@@ -152,8 +158,8 @@ Event compute_event(Simulation &sim)
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			e._p1._pos[i] = sim._the_boys[e._p1._id]._pos[i] + e._original_time_to_collision * sim._the_boys[e._p1._id]._vel[i];
-			e._p2._pos[i] = sim._the_boys[e._p2._id]._pos[i] + e._original_time_to_collision * sim._the_boys[e._p2._id]._vel[i];
+			e._p1._pos[i] = e._p1._pos[i] + e._original_time_to_collision * e._p1._vel[i];
+			e._p2._pos[i] = e._p2._pos[i] + e._original_time_to_collision * e._p2._vel[i];
 		}
 		double x_sep = e._p1._pos[0] - e._p2._pos[0];
 		double y_sep = e._p1._pos[1] - e._p2._pos[1];
@@ -187,7 +193,7 @@ Event compute_event(Simulation &sim)
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			e._p1._pos[i] = sim._the_boys[e._p1._id]._pos[i] + e._original_time_to_collision * e._p1._vel[i];
+			e._p1._pos[i] = e._p1._pos[i] + e._original_time_to_collision * e._p1._vel[i];
 		}
 		e._p1._vel[e._axis_hit] *= -1;
 		sim._the_boys[e._p1._id]._vel = e._p1._vel;
@@ -200,7 +206,7 @@ Event compute_event(Simulation &sim)
 	return e;
 }
 
-std::vector<Event> update_event_list(Simulation sim)
+std::vector<Event> create_new_events(Simulation const & sim)
 {
 	std::vector<Particle> affected_particles = { sim._popped_event->_p1 };
 	if (sim._popped_event->_type == "particle")
@@ -208,59 +214,20 @@ std::vector<Event> update_event_list(Simulation sim)
 		affected_particles.push_back(sim._popped_event->_p2);
 	}
 	//delete old events
-	for (Event& e : sim._buddy_list)
+	for (Event e : sim._buddy_list)
 	{
-		if (e._type == "wall")
-		{
-			if (sim._popped_event->_p1._id == e._p1._id)
-			{
-				//pop event
-				std::string id = sim._popped_event->_id;
-				auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
-				if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
-			}
-
-			if (sim._popped_event->_type == "particle")
-			{
-				if (sim._popped_event->_p2._id == e._p1._id)
-				{
-					std::string id = sim._popped_event->_id;
-					auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
-					if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
-				}
-			}
-		}
-
 		if (e._type == "particle")
 		{
 			if (sim._popped_event->_p1._id == e._p1._id)
 			{
 				//pop event
 				affected_particles.push_back(e._p2);
-				std::string id = sim._popped_event->_id;
-				auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
-				if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
 			}
 
 			if (sim._popped_event->_p1._id == e._p2._id)
 			{
 				//pop event
 				affected_particles.push_back(e._p1);
-				std::string id = sim._popped_event->_id;
-				auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
-				if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
-			}
-
-			if (sim._popped_event->_type == "particle")
-			{
-				if (sim._popped_event->_p2._id == e._p1._id || sim._popped_event->_p2._id == e._p2._id)
-				{
-					//pop event
-					std::string id = sim._popped_event->_id;
-					auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
-					if (it < sim._buddy_list.end()) { sim._buddy_list.erase(it); }
-				}
-
 			}
 		}
 	}
@@ -274,6 +241,66 @@ std::vector<Event> update_event_list(Simulation sim)
 		if (new_e._null != NULL) { new_events.push_back(new_e); std::cout << "Event added: " << new_e._id << std::endl; }
 	}
 	return new_events;
+}
+
+std::vector<Event> create_old_event_list(Simulation const & sim)
+{
+	std::vector<Event> popped_events = { };
+
+	for (Event e : sim._buddy_list)
+	{
+		if (e._type == "wall")
+		{
+			if (sim._popped_event->_p1._id == e._p1._id)
+			{
+				popped_events.push_back(e);
+			}
+
+			if (sim._popped_event->_type == "particle")
+			{
+				if (sim._popped_event->_p2._id == e._p1._id)
+				{
+					popped_events.push_back(e);
+				}
+			}
+		}
+
+		if (e._type == "particle")
+		{
+			if (sim._popped_event->_p1._id == e._p1._id)
+			{
+				popped_events.push_back(e);
+			}
+
+			if (sim._popped_event->_p1._id == e._p2._id)
+			{
+				popped_events.push_back(e);
+			}
+
+			if (sim._popped_event->_type == "particle")
+			{
+				if (sim._popped_event->_p2._id == e._p1._id || sim._popped_event->_p2._id == e._p2._id)
+				{
+					popped_events.push_back(e);
+				}
+
+			}
+		}
+	}
+	return popped_events;
+}
+
+void delete_events(Simulation & sim, std::vector<Event> const& popped_events)
+{
+	for (auto e : popped_events)
+	{
+		std::string id = e._id;
+		auto it = std::find_if(sim._buddy_list.begin(), sim._buddy_list.end(), [&id](const Event& obj) {return obj._id == id; });
+		if (it < sim._buddy_list.end())
+		{
+			sim._buddy_list.erase(it);
+		}
+	}
 }
 
 bool check_dup_event(Simulation const & sim, Event new_event)
@@ -304,14 +331,13 @@ void print_event_details(Event const & e)
 void save_events(Simulation &sim)
 {
 	std::reverse(sim._processed_events.begin(), sim._processed_events.end());
-	double save_time = 0;
+	double save_time = sim._time_save_interval;
 	int it = 0;
 	while (save_time < sim._run_time)
 	{
 		it++;
-		save_time += sim._time_save_interval;
 		int offset = (sim._particles * 6) * (it-1);
-		for (Particle &p : sim._the_boys)
+		for (Particle const &p : sim._the_boys)
 		{
 			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)] + sim._time_save_interval * sim._particle_data[offset + (p._id * 6) + 3]);
 			sim._particle_data.push_back(sim._particle_data[offset + (p._id * 6)+1] + sim._time_save_interval * sim._particle_data[offset + (p._id * 6) + 4]);
@@ -322,7 +348,7 @@ void save_events(Simulation &sim)
 		}
 		//modifies the data that has just been added due to an event having occurred
 		offset = (sim._particles * 6) * (it);
-		for (Event &e : sim._processed_events)
+		for (Event const &e : sim._processed_events)
 		{
 			if (save_time>e._sim_time && (save_time - e._sim_time) <= sim._time_save_interval)
 			{
@@ -351,6 +377,7 @@ void save_events(Simulation &sim)
 				
 			}
 		}
+		save_time += sim._time_save_interval;
 	}
 }
 
@@ -393,17 +420,17 @@ void cycle(Simulation& sim)
 		std::cout << "This timestep = " << sim._popped_event->_current_time_to_collision << " Total time = " << sim._sim_time << std::endl;
 		*sim._popped_event = compute_event(sim);
 		update_event_times(sim);
-		std::vector<Event> new_events = update_event_list(sim);
+		sim._processed_events.push_back(*sim._popped_event);
 		std::cout << "After collision:" << std::endl;
 		print_event_details(*sim._popped_event);
 		std::cout << std::endl;
+		std::vector<Event> new_events = create_new_events(sim);
+		std::vector<Event> popped_events = create_old_event_list(sim);
 		//end of cycle: add old event to processed events, pop old event, add new event
-		sim._processed_events.push_back(*sim._popped_event);
-		sim._buddy_list.pop_back();
+		delete_events(sim, popped_events);
 		sim._buddy_list.insert(std::end(sim._buddy_list), std::begin(new_events), std::end(new_events));
 		sim.order_event_list();
 	}
-	end_time_update(sim);
 }
 
 void setup_computation(Simulation &sim)
@@ -419,6 +446,7 @@ void setup_computation(Simulation &sim)
 	sim.order_event_list();
 	save_data(sim);
 	cycle(sim);
+	end_time_update(sim);
 	save_events(sim);
 	save_data(sim);
 }

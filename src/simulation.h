@@ -48,7 +48,7 @@ public:
 	int _particles = 100;
 	int _collisions = 0;
 	double _sim_time;
-	const double _run_time = 4e-12;
+	const double _run_time = 0.7e-11;
 	const double _particle_radius = 1.5e-10;
 	double _dt = 1e-13;
 	double _time_save_interval = 1e-13;

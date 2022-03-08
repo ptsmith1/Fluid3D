@@ -48,7 +48,7 @@ def plot(positions, num_particles, time_steps, box_size):
     ax.set_zlim3d(-box_size, box_size)
     for i in range(num_particles):
         label = ax.text(positions.iloc[0,0], positions.iloc[0,1], positions.iloc[0,2],s='%d'%(i),zorder=0)
-        plot, = ax.plot(positions.iloc[0,0], positions.iloc[0,1], positions.iloc[0,2], color="red", marker='o', markersize='11')
+        plot, = ax.plot(positions.iloc[0,0], positions.iloc[0,1], positions.iloc[0,2], color="red", marker='o', markersize='30')
         line, = ax.plot(positions.iloc[0,[0]], positions.iloc[1,[1]], positions.iloc[2,[0]], color="black", linewidth=1)
         labels.append(label)
         plots.append(plot)
@@ -76,12 +76,13 @@ def animate(i, positions, plots, lines, labels, timestamp):
     if len(plot_points) >= plot_cutoff:
         plot_points = list(range(i-plot_cutoff-1, i+1))
     for j in range(len(plots)):
-        labels[j].set_position([positions[i][j*3],positions[i][j*3+1],positions[i][j*3+2]])
-        labels[j].set_3d_properties(positions[i][j*3 + 2])
-        plots[j].set_data([positions[i][j*3],positions[i][j*3+1]])
-        plots[j].set_3d_properties(positions[i][j*3+2])
-        lines[j].set_data([positions[plot_points,j*3],positions[plot_points, j*3 + 1]])
-        lines[j].set_3d_properties(positions[plot_points,j*3+2])
+       if j== 53 or j==4 or j==68:
+            labels[j].set_position([positions[i][j*3],positions[i][j*3+1],positions[i][j*3+2]])
+            labels[j].set_3d_properties(positions[i][j*3 + 2])
+            plots[j].set_data([positions[i][j*3],positions[i][j*3+1]])
+            plots[j].set_3d_properties(positions[i][j*3+2])
+            lines[j].set_data([positions[plot_points,j*3],positions[plot_points, j*3 + 1]])
+            lines[j].set_3d_properties(positions[plot_points,j*3+2])
     timestamp.set_text('Timestep: ' + str(i))
     return plots + lines + labels + [timestamp]
 

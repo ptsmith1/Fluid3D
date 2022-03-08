@@ -15,11 +15,12 @@ std::tuple<double, double> overlap(double, double, double, double);
 bool get_sign(double x);
 void order_event_list(Simulation);
 Event compute_event(Simulation &);
-std::vector<Event> update_event_list(Simulation);
+std::vector<Event> create_new_events(Simulation const&);
+std::vector<Event> create_old_event_list(Simulation const&);
+void delete_events(Simulation&, std::vector<Event> const&);
 void update_particle_velocities(Simulation);
 bool check_dup_event(Simulation const&, Event);
 void update_event_times(Simulation &);
 void print_event_details(Event const&);
-void end_time_update(Simulation &);
-
+void end_time_update(Simulation&);
 void setup_computation(Simulation &);
