@@ -19,12 +19,11 @@
 using std::filesystem::current_path;
 using namespace Fluid3D_namespace;
 
-std::tuple<std::vector<double>, std::vector<double>, int> workhorse(Simulation sim);
-
-int main_func();
+void init_timestep_simulation(Simulation & sim);
 
 Fluid3D::Fluid3D()
 {
+	//will eventualy setup inputs, external libraries and any other dependencies
 }
 
 void Fluid3D::save_to_file(const Simulation &sim)
@@ -42,12 +41,12 @@ void Fluid3D::save_to_file(const Simulation &sim)
 	}
 	f << "\n";
 
-	for (int it_col = 0; it_col < (sim._run_time / sim._time_save_interval) + 1; it_col++)
+	for (int it_row = 0; it_row < (sim._run_time / sim._time_save_interval) + 1; it_row++)
 	{
-		f << it_col;
-		for (int it_row = 0; it_row < (sim._particles * 6); it_row++)
+		f << it_row;
+		for (int it_col = 0; it_col < (sim._particles * 6); it_col++)
 		{
-			f << "," << sim._particle_data[it_row + sim._particles * 6 * it_col];
+			f << "," << sim._particle_data[it_col + sim._particles * 6 * it_row];
 		}
 		f << "\n";
 	}
@@ -60,6 +59,7 @@ int main()
 	Fluid3D fluid3D;
 	Simulation sim;
 	setup_computation(sim);
+	//init_timestep_simulation(sim);
 	fluid3D.save_to_file(sim);
 	return 0;
 }

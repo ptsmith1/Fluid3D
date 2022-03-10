@@ -11,7 +11,7 @@ import math
 paused = False
 
 def load_data():
-    meta_data = pd.read_csv('C:\\Users\\melti\\source\\repos\\Fluid3D\\build\\fluid_data.csv',nrows=1)
+    meta_data = pd.read_csv('C:\\Users\\melti\\source\\repos\\Fluid3D\\src\\out\\build\\x64-Debug\\fluid_data.csv',nrows=1)
     num_particles = int(meta_data.iloc[0]['sim_size'])
     time_steps = int(meta_data.iloc[0]['timesteps'])
     box_size = meta_data.iloc[0]['box_size']
@@ -20,7 +20,7 @@ def load_data():
         cols.append(i)
         cols.append(i+1)
         cols.append(i+2)
-    positions = pd.read_csv('C:\\Users\\melti\\source\\repos\\Fluid3D\\build\\fluid_data.csv',skiprows=2,dtype=float, header=0, index_col=0, usecols=cols)
+    positions = pd.read_csv('C:\\Users\\melti\\source\\repos\\Fluid3D\\src\\out\\build\\x64-Debug\\fluid_data.csv',skiprows=2,dtype=float, header=0, index_col=0, usecols=cols)
     return positions, num_particles, time_steps, box_size
 
 def plot(positions, num_particles, time_steps, box_size):
@@ -48,7 +48,7 @@ def plot(positions, num_particles, time_steps, box_size):
     ax.set_zlim3d(-box_size, box_size)
     for i in range(num_particles):
         label = ax.text(positions.iloc[0,0], positions.iloc[0,1], positions.iloc[0,2],s='%d'%(i),zorder=0)
-        plot, = ax.plot(positions.iloc[0,0], positions.iloc[0,1], positions.iloc[0,2], color="red", marker='o', markersize='30')
+        plot, = ax.plot(positions.iloc[0,0], positions.iloc[0,1], positions.iloc[0,2], color="red", marker='o', markersize='11')
         line, = ax.plot(positions.iloc[0,[0]], positions.iloc[1,[1]], positions.iloc[2,[0]], color="black", linewidth=1)
         labels.append(label)
         plots.append(plot)
@@ -76,7 +76,6 @@ def animate(i, positions, plots, lines, labels, timestamp):
     if len(plot_points) >= plot_cutoff:
         plot_points = list(range(i-plot_cutoff-1, i+1))
     for j in range(len(plots)):
-       if j== 53 or j==4 or j==68:
             labels[j].set_position([positions[i][j*3],positions[i][j*3+1],positions[i][j*3+2]])
             labels[j].set_3d_properties(positions[i][j*3 + 2])
             plots[j].set_data([positions[i][j*3],positions[i][j*3+1]])

@@ -1,4 +1,6 @@
 #pragma once
+#include "..\event_driven_collisions.h"
+
 class TestClass
 {
 public:

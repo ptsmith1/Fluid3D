@@ -18,5 +18,3 @@ namespace Fluid3D_namespace
 		void save_to_file(const Simulation & sim);
 	};
 }
-
-// TODO: Reference additional headers your program requires here.

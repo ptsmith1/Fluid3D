@@ -66,23 +66,22 @@ Event::Event(int null)
 	_null = 0;
 }
 
-Simulation::Simulation() : _random_setup(300, -300, _box_size, -_box_size)
+Simulation::Simulation()
 {
-	_sim_time = 0;
-	add_particles();
+	add_random_particles();
 }
 
-void Simulation::add_particles()
+void Simulation::add_random_particles()
 {
 	for (int i = 0; i < _particles; i++)
 	{
 		Particle p(i);
-		p.init_vectors(_random_setup);
-		_the_boys.push_back(p);
+		p.init_vectors(*_random_setup);
+		_particle_array.push_back(p);
 	}
 }
 
 void Simulation::order_event_list()
 {
-	std::sort(_buddy_list.begin(), _buddy_list.end(), reorderer);
+	std::sort(_event_list.begin(), _event_list.end(), reorderer);
 }

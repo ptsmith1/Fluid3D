@@ -99,23 +99,24 @@ void wall_collisions(Simulation& sim, std::vector<double>& pos, std::vector<doub
 {
 	for (int i = 0; i < pos.capacity(); i += 3)
 	{
-		if (pos[i] < -sim._box._x_boundary / 2 || pos[i] > sim._box._x_boundary / 2)
+		if (pos[i] < -sim._box._x_boundary || pos[i] > sim._box._x_boundary)
 		{
 			vel[i] = -vel[i];
 		}
-		if (pos[i+1] < -sim._box._y_boundary / 2 || pos[i+1] > sim._box._y_boundary / 2)
+		if (pos[i+1] < -sim._box._y_boundary || pos[i+1] > sim._box._y_boundary)
 		{
 			vel[i+1] = -vel[i+1];
 		}
-		if (pos[i+2] < -sim._box._z_boundary / 2 || pos[i+2] > sim._box._z_boundary / 2)
+		if (pos[i+2] < -sim._box._z_boundary || pos[i+2] > sim._box._z_boundary)
 		{
 			vel[i+2] = -vel[i+2];
 		}
 	}
 	std::cout << "Wall collision" << std::endl;
+	sim._collisions++;
 }
 
-int particle_collisions(Simulation& sim, std::vector<double>& pos, std::vector<double>& vel, int collision_count)
+void particle_collisions(Simulation& sim, std::vector<double>& pos, std::vector<double>& vel)
 {
 	for (int n = 0; n < pos.capacity(); n += 3)
 	{
@@ -143,20 +144,17 @@ int particle_collisions(Simulation& sim, std::vector<double>& pos, std::vector<d
 					vel[m + 2] = vel[m + 2] + z_sep * (x_sep * vx_sep + y_sep * vy_sep + z_sep * vz_sep) / (4 * sim._particle_radius * sim._particle_radius);
 
 					std::cout << "Particle Collision" << std::endl;
-					collision_count++;
+					sim._collisions++;
 
 				}
 			}
 		}
 	}
-	return collision_count;
-	
 }
 
 
-std::tuple<std::vector<double>, std::vector<double>, int> workhorse(Simulation sim)
+void init_timestep_simulation(Simulation & sim)
 {
-	int collision_count = 0;
 	double currenttime = 0;
 	double unit_size = 1e-10; //meters
 	double zone_count = 2*sim._box._x_boundary * 2* sim._box._y_boundary * 2* sim._box._z_boundary;
@@ -164,23 +162,40 @@ std::tuple<std::vector<double>, std::vector<double>, int> workhorse(Simulation s
 	std::vector<double> pos = std::vector<double>(sim._particles * 3); // stores x,y,z position of each particle
 	std::vector<double> vel = std::vector<double>(sim._particles * 3);
 
-	std::vector<double> all_pos;
-	std::vector<double> all_vel;
-
 	initiate_vel_vec(vel, 500,-500);
 	initiate_pos_vec(pos, sim._box._x_boundary, sim._box._y_boundary, sim._box._z_boundary); //should realy pass position boundaries based on material size and origin
-
+	int it = 0;
 	while (currenttime < sim._run_time)
 	{
 		currenttime += sim._dt;
-		all_pos.insert(all_pos.end(), pos.begin(), pos.end());
-		all_vel.insert(all_vel.end(), vel.begin(), vel.end());
+		int save = sim._time_save_interval / sim._dt;
+		it++;
+		if (it == save)
+		{
+			for (int i = 0; i < sim._particles; i++)
+			{
+				sim._particle_data.push_back(pos[i * 3]);
+				sim._particle_data.push_back(pos[i * 3 + 1]);
+				sim._particle_data.push_back(pos[i * 3 + 2]);
+				sim._particle_data.push_back(vel[i * 3]);
+				sim._particle_data.push_back(vel[i * 3 + 1]);
+				sim._particle_data.push_back(vel[i * 3 + 2]);
+			}
+			it = 0;
+		}
 		//coords_to_zone_num(pos, sim.d.zone_size, region, particle_zones); //updates each particles current zone
-		update_pos(pos, vel, sim._dt);
 		wall_collisions(sim, pos, vel);
-		collision_count = particle_collisions(sim, pos, vel, collision_count);
+		particle_collisions(sim, pos, vel);
+		update_pos(pos, vel, sim._dt);
 		//heat_zone(pos, vel, particle_zones, dt);
 	}
-
-	return std::make_tuple(all_pos, all_vel, collision_count);
+	for (int i = 0; i < sim._particles; i++)
+	{
+		sim._particle_data.push_back(pos[i * 3]);
+		sim._particle_data.push_back(pos[i * 3 + 1]);
+		sim._particle_data.push_back(pos[i * 3 + 2]);
+		sim._particle_data.push_back(vel[i * 3]);
+		sim._particle_data.push_back(vel[i * 3 + 1]);
+		sim._particle_data.push_back(vel[i * 3 + 2]);
+	}
 }

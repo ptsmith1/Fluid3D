@@ -14,18 +14,18 @@ set(Fluid3D_PYTHON_DIR $(Fluid3D_DIR)/python)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 set(Headers
-fluid3D.h workhorse.h random_setup.h 
+fluid3D.h timestep_collisions.h random_setup.h simulation.h
 simulation.h event_driven_collisions.h
 )
 set(Sources
-fluid3D.cpp workhorse.cpp random_setup.cpp
+fluid3D.cpp timestep_collisions.cpp random_setup.cpp simulation.cpp
 simulation.cpp event_driven_collisions.cpp
 )
 
 add_executable(${PROJECT_NAME} ${Sources})
 add_library(${PROJECT_NAME}_lib STATIC ${Sources} ${Headers}  ) #change this to add_executable if you want to compile as executables
 
-configure_file(Fluid3DConfig.h.in Fluid3DConfig.h)
+#configure_file(Fluid3DConfig.h.in Fluid3DConfig.h)
 ################################################################################################################
 option(USE_TESTS "Use test library" ON)
 
